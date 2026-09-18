@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionX // Parallel Video Comparison Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Minimal Header -->
+    <header class="top-header">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <span class="brand-title">VISION<span class="brand-accent">X</span></span>
+        <span class="brand-sub">STUDIO // PR-01</span>
+      </div>
+      <div class="system-status">
+        <span class="status-dot online"></span>
+        <span id="systemStatusText" class="status-label">Ready</span>
+      </div>
+    </header>
+
+    <!-- Studio Controls & Selection Strip -->
+    <section class="control-panel">
+      <div class="control-group">
+        <label for="videoSelect" class="control-label">Source Video</label>
+        <div class="select-wrapper">
+          <select id="videoSelect" class="select-input">
+            <option value="" disabled selected>Loading local videos...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Pipeline Mode</label>
+        <div class="pill-group" id="modeSelector">
+          <button type="button" class="pill-btn active" data-mode="track" id="modeTrackBtn">Tracking (ByteTrack)</button>
+          <button type="button" class="pill-btn" data-mode="detect" id="modeDetectBtn">Detection Only</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Processing Length</label>
+        <div class="pill-group" id="lengthSelector">
+          <button type="button" class="pill-btn active" data-length="150" id="len150Btn">5s Preview (Fast)</button>
+          <button type="button" class="pill-btn" data-length="0" id="lenAllBtn">Full Clip</button>
+        </div>
+      </div>
+
+      <div class="action-group">
+        <button id="runPipelineBtn" class="primary-btn">
+          <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="runBtnText">Run Pipeline</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Live Execution Status Bar (Visible during processing) -->
+    <section id="jobProgressContainer" class="job-progress-container hidden">
+      <div class="job-progress-header">
+        <div class="job-info">
+          <span class="spinner"></span>
+          <span id="jobStageText" class="job-stage">Processing video...</span>
+          <span id="jobTelemetryText" class="job-telemetry">Frame 0/0 | 0.0 FPS</span>
+        </div>
+        <span id="jobPercentText" class="job-percent">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="jobProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </section>
+
+    <!-- Parallel Comparison Theater (2 Video Players) -->
+    <main class="theater-section">
+      <div class="players-grid">
+        
+        <!-- Left: Source Footage -->
+        <div class="player-card">
+          <div class="player-header">
+            <div class="badge-tag source-tag">SOURCE FOOTAGE</div>
+            <div id="sourceMetaLabel" class="player-meta">3840×2160 • 30 FPS</div>
+          </div>
+          <div class="video-wrapper">
+            <video id="sourceVideo" preload="auto" playsinline muted>
+              <p>Your browser does not support HTML5 video.</p>
+            </video>
+            <div id="sourcePlaceholder" class="video-placeholder hidden">
+              <span class="placeholder-text">Select a video to load source footage</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: VisionX Output -->
+        <div class="player-card">
+          <div class="player-header">
+            <div class="badge-tag output-tag" id="outputBadgeTag">VISIONX OUTPUT</div>
+            <div id="outputMetaLabel" class="player-meta">Awaiting Processing</div>
+          </div>
+          <div class="video-wrapper">
+            <video id="outputVideo" preload="auto" playsinline muted>
+              <p>Your browser does not support HTML5 video.</p>
+            </video>
+            <div id="outputPlaceholder" class="video-placeholder">
+              <div class="placeholder-box">
+                <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                  <line x1="7" y1="2" x2="7" y2="22"></line>
+                  <line x1="17" y1="2" x2="17" y2="22"></line>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <line x1="2" y1="7" x2="7" y2="7"></line>
+                  <line x1="2" y1="17" x2="7" y2="17"></line>
+                  <line x1="17" y1="17" x2="22" y2="17"></line>
+                  <line x1="17" y1="7" x2="22" y2="7"></line>
+                </svg>
+                <span id="outputPlaceholderText" class="placeholder-text">Output video will appear here after running</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Unified Parallel Master Controls -->
+      <div class="master-controls">
+        <div class="controls-top">
+          
+          <!-- Play / Pause Button -->
+          <button id="masterPlayBtn" class="ctrl-btn play-btn" title="Play/Pause (Space)">
+            <svg id="playIcon" class="icon-ctrl" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 4 20 12 6 20 6 4"></polygon>
+            </svg>
+            <svg id="pauseIcon" class="icon-ctrl hidden" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+
+          <!-- Step Backward 1 Frame -->
+          <button id="stepBackBtn" class="ctrl-btn" title="Step -1 Frame (Left Arrow)">
+            <svg class="icon-ctrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 19 2 12 11 5 11 19"></polygon>
+              <polygon points="22 19 13 12 22 5 22 19"></polygon>
+            </svg>
+          </button>
+
+          <!-- Step Forward 1 Frame -->
+          <button id="stepForwardBtn" class="ctrl-btn" title="Step +1 Frame (Right Arrow)">
+            <svg class="icon-ctrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 19 22 12 13 5 13 19"></polygon>
+              <polygon points="2 19 11 12 2 5 2 19"></polygon>
+            </svg>
+          </button>
+
+          <!-- Timeline Scrubber -->
+          <div class="scrubber-container">
+            <input type="range" id="timelineScrubber" min="0" max="100" value="0" step="0.001" class="timeline-slider">
+          </div>
+
+          <!-- Time & Frame Counter -->
+          <div class="time-display">
+            <span id="currentTimeDisplay" class="mono-time">00:00.00</span>
+            <span class="time-divider">/</span>
+            <span id="durationDisplay" class="mono-time">00:05.00</span>
+            <span id="frameCounter" class="frame-tag">Frame 0</span>
+          </div>
+
+          <!-- Sync Lock Toggle -->
+          <button id="syncLockBtn" class="ctrl-btn active" title="Lock Players in Sync (S)">
+            <svg class="icon-ctrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span class="ctrl-label">SYNC</span>
+          </button>
+
+          <!-- Playback Speed -->
+          <div class="speed-select-wrap">
+            <select id="speedSelect" class="speed-select">
+              <option value="0.25">0.25×</option>
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1.0×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2.0×</option>
+            </select>
+          </div>
+
+          <!-- Loop Toggle -->
+          <button id="loopToggleBtn" class="ctrl-btn" title="Toggle Loop">
+            <svg class="icon-ctrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="17 1 21 5 17 9"></polyline>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+              <polyline points="7 23 3 19 7 15"></polyline>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+          </button>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Collapsible Drawer: Heatmaps & Diagnostics -->
+    <footer class="drawer-section">
+      <div class="drawer-tabs">
+        <button class="drawer-tab active" data-tab="heatmaps" id="tabHeatmapsBtn">Heatmap Gallery</button>
+        <button class="drawer-tab" data-tab="logs" id="tabLogsBtn">Live Pipeline Console</button>
+      </div>
+
+      <div class="drawer-content">
+        <!-- Heatmap Gallery Panel -->
+        <div id="heatmapsPanel" class="tab-panel active">
+          <div id="heatmapsGrid" class="heatmaps-grid">
+            <div class="empty-state">No heatmaps loaded yet. Run tracking to generate occupancy heatmaps.</div>
+          </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div id="logsPanel" class="tab-panel">
+          <pre id="consoleLogs" class="console-box">System initialized. Awaiting commands...</pre>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Heatmap Fullscreen Modal -->
+  <div id="imageModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Heatmap</h3>
+        <button id="modalCloseBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImage" src="" alt="Heatmap Enlarged">
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
