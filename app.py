@@ -29,62 +29,7 @@ OUTPUTS_HEATMAPS_DIR.mkdir(parents=True, exist_ok=True)
 # In-memory job tracker
 jobs = {}
 
-def get_video_metadata(video_path: Path):
-    """Extract metadata using ffprobe."""
-    try:
-        cmd = [
-            "ffprobe", "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height,r_frame_rate,duration,nb_frames",
-            "-of", "json",
-            str(video_path)
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        data = json.loads(res.stdout)
-        stream = data.get("streams", [{}])[0]
-        
-        # Calculate fps
-        r_fps = stream.get("r_frame_rate", "30/1")
-        if "/" in r_fps:
-            num, den = map(float, r_fps.split("/"))
-            fps = round(num / den, 2) if den > 0 else 30.0
-        else:
-            fps = float(r_fps)
-            
-        duration = float(stream.get("duration", 0.0))
-        width = int(stream.get("width", 0))
-        height = int(stream.get("height", 0))
-        frames = int(stream.get("nb_frames", int(duration * fps)))
-        
-        size_mb = round(video_path.stat().st_size / (1024 * 1024), 2)
-        return {
-            "width": width,
-            "height": height,
-            "fps": fps,
-            "duration": round(duration, 2),
-            "frames": frames,
-            "size_mb": size_mb
-        }
-    except Exception as e:
-        return {
-            "width": 0, "height": 0, "fps": 30.0, "duration": 0.0, "frames": 0,
-            "size_mb": round(video_path.stat().st_size / (1024 * 1024), 2),
-            "error": str(e)
-        }
-
-def transcode_to_h264(input_path: Path, output_path: Path):
-    """Fast transcode video to browser-playable H.264 (yuv420p)."""
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", str(input_path),
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-crf", "22",
-        "-pix_fmt", "yuv420p",
-        "-an",
-        str(output_path)
-    ]
-    subprocess.run(cmd, capture_output=True, check=True)
+from visionx.utils.video import get_video_metadata, transcode_to_h264
 
 
 @app.route("/")
